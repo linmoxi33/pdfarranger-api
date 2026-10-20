@@ -34,6 +34,37 @@ REF = "main"
 URL = f"https://codeload.github.com/pdfarranger/pdfarranger/tar.gz/refs/heads/{REF}"
 
 
+def _strip(member: tarfile.TarInfo, prefix: str) -> tarfile.TarInfo:
+    """Return a copy of ``member`` with the tarball's wrapper directory removed."""
+    member.name = member.name[len(prefix):]
+    return member
+
+
+def download(url: str, attempts: int = 3) -> bytes:
+    """Download with retries.
+
+    codeload occasionally closes the connection mid-body on this network, which
+    surfaces as ``IncompleteRead`` after a partial read.  A retry usually gets a
+    complete response; failing that, the caller gets a clear instruction.
+    """
+    last: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(url, timeout=120) as resp:
+                length = resp.headers.get("Content-Length")
+                payload = resp.read()
+                if length is not None and len(payload) != int(length):
+                    raise OSError(
+                        f"truncated download: got {len(payload)} of {length} bytes"
+                    )
+                return payload
+        except Exception as exc:
+            last = exc
+            print(f"  attempt {attempt}/{attempts} failed: {type(exc).__name__}: {exc}",
+                  file=sys.stderr)
+    raise OSError(f"all {attempts} attempts failed: {last}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--force", action="store_true", help="re-download")
@@ -45,13 +76,12 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"fetching {URL}")
     try:
-        with urllib.request.urlopen(URL, timeout=120) as resp:
-            payload = resp.read()
+        payload = download(URL)
     except Exception as exc:
         print(f"download failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         print(
             "If the network blocks codeload, download the tarball manually and "
-            f"extract it to {TARGET}",
+            f"extract it so that {TARGET / 'tests' / 'test_exporter.py'} exists.",
             file=sys.stderr,
         )
         return 1
@@ -66,13 +96,20 @@ def main(argv: list[str] | None = None) -> int:
         members = tar.getmembers()
         # Strip the single top-level directory the tarball wraps everything in.
         prefix = members[0].name.split("/")[0] + "/"
-        for member in members:
-            if not member.name.startswith(prefix):
-                continue
-            member.name = member.name[len(prefix):]
-            if not member.name:
-                continue
-            tar.extract(member, path=TARGET)
+        # ``filter="data"`` is required from Python 3.14 (and silences the
+        # DeprecationWarning now): it rejects absolute paths, links pointing
+        # outside the target and device files.  The archive is upstream's, but
+        # extracting an unfiltered tarball is a habit worth not forming.
+        try:
+            tar.extractall(path=TARGET, filter="data",
+                           members=[_strip(m, prefix) for m in members if m.name.startswith(prefix)])
+        except TypeError:  # Python < 3.12 has no ``filter`` parameter
+            for member in members:
+                if not member.name.startswith(prefix):
+                    continue
+                member.name = member.name[len(prefix):]
+                if member.name:
+                    tar.extract(member, path=TARGET)
 
     check = TARGET / "tests" / "test_exporter.py"
     if not check.is_file():
