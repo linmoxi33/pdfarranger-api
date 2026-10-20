@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=65"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdfarranger-api"
+version = "0.1.0"
+description = "Headless API, SDK and CLI for PDF Arranger's page engine"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "Vespera" }]
+keywords = ["pdf", "pdfarranger", "merge", "crop", "rotate", "cli", "headless"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "pikepdf>=8.0",
+    "python-dateutil>=2.4.0",
+    "packaging",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+pdfarranger-api = "pdfarranger_api.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/linmoxi33/pdfarranger-api"
+Upstream = "https://github.com/pdfarranger/pdfarranger"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pdfarranger_api*"]
+
+[tool.setuptools.package-data]
+"pdfarranger_api._vendor.pdfarranger" = ["COPYING"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    # The engine emits pikepdf repair warnings for upstream's deliberately
+    # malformed test fixtures; they are expected, not a signal.
+    "ignore::UserWarning",
+]
