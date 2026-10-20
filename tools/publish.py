@@ -38,6 +38,7 @@ INCLUDE = [
     ".gitattributes",
     ".gitignore",
     "CHANGELOG.md",
+    "LICENSE",
     "README.md",
     "pyproject.toml",
     "docs/architecture.png",
