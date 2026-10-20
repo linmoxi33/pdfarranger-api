@@ -45,10 +45,16 @@ def find_upstream(explicit: str | None) -> Path:
     for cand in candidates:
         if (cand / "tests" / "test_exporter.py").is_file():
             return cand.resolve()
-    raise SystemExit(
-        "upstream checkout not found; pass --upstream-dir pointing at a "
-        "pdfarranger source tree containing tests/test_exporter.py"
+    # Exit code 3 is the "not available" signal the test suite turns into a skip;
+    # anything else would be indistinguishable from a real failure.
+    print(
+        "upstream checkout not found. Fetch it first:\n"
+        "    python tools/fetch_upstream.py\n"
+        "or pass --upstream-dir pointing at a pdfarranger source tree that "
+        "contains tests/test_exporter.py",
+        file=sys.stderr,
     )
+    raise SystemExit(3)
 
 
 def install_aliases() -> None:

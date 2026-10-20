@@ -10,3 +10,4 @@ out/
 .ups
 *.tmp.pdf
 *.norm.pdf
+.upstream/

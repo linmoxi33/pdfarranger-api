@@ -299,11 +299,17 @@ renaming one is a major bump.
 | Tests can actually fail | `tools/mutation_check.py` injects 12 deliberate defects and requires each to be caught |
 
 ```bash
-python -m pytest                    # 130 tests
+python -m pytest                    # 130 tests, no install needed
 python tools/verify_vendor.py       # vendor hashes
-python tools/run_upstream_suite.py  # upstream's 29 golden tests
+python tools/fetch_upstream.py      # one-time: upstream source for the golden suite
+python tools/run_upstream_suite.py  # upstream's own 29 golden tests
 python tools/mutation_check.py      # 12 mutations must all be killed
 ```
+
+A fresh clone runs the full suite without `pip install`: the CLI tests put the
+checkout on `PYTHONPATH` themselves, and the golden-suite test *skips* with an
+explicit reason when `.upstream/` has not been fetched yet — a missing optional
+checkout should not look like a broken engine.
 
 ## Limits
 

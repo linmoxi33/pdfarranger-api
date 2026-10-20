@@ -45,8 +45,13 @@ def run_cli(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
     """Run the CLI in a *separate process*.
 
     Using a subprocess rather than calling ``main()`` in-process is deliberate:
-    it proves the installed entry point works, that the JSON envelope survives
-    the real console encoding on Windows, and that exit codes reach the shell.
+    it proves the entry point works, that the JSON envelope survives the real
+    console encoding on Windows, and that exit codes reach the shell.
+
+    The package is put on ``PYTHONPATH`` explicitly instead of relying on it being
+    pip-installed.  A fresh clone has not been installed yet, and a test suite
+    that only passes after an install step fails for the wrong reason - it reports
+    a missing install as a broken CLI.
     """
     return subprocess.run(
         [sys.executable, "-m", "pdfarranger_api", *args],
@@ -60,11 +65,16 @@ def run_cli(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
 
 
 def _clean_env() -> dict[str, str]:
-    """Environment for subprocesses: no inherited PYTHONPATH surprises."""
+    """Environment for subprocesses.
+
+    ``PYTHONPATH`` is *set* to the repository root rather than merely not cleared:
+    that makes the subprocess import this checkout's package whether or not it has
+    been installed, and whether or not some other copy is installed.
+    """
     import os
 
     env = dict(os.environ)
-    env.pop("PYTHONPATH", None)
+    env["PYTHONPATH"] = str(REPO_ROOT)
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONUTF8"] = "1"
     return env

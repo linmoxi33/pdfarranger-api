@@ -234,17 +234,28 @@ def test_upstream_golden_suite_still_passes():
     This is the load-bearing check that the vendored engine is unmodified: if the
     four files differed from upstream in any way that affects output, these 29
     golden-file comparisons would fail.
+
+    The suite needs an upstream *source checkout* (it is not on PyPI, and the
+    golden fixtures under ``tests/exporter/`` are not vendored).  When no checkout
+    is available the test is skipped with an explicit reason rather than failing:
+    a fresh clone without network should not report a broken engine.  The skip is
+    loud - run ``tools/fetch_upstream.py`` to make it run.
     """
     import subprocess
     import sys
 
     repo = Path(__file__).resolve().parents[1]
     result = subprocess.run(
-        [sys.executable, str(repo / "tools" / "run_upstream_suite.py")],
+        [sys.executable, str(repo / "tools" / "run_upstream_suite.py"), "-q"],
         capture_output=True,
         text=True,
         encoding="utf-8",
         cwd=str(repo),
     )
+    if result.returncode == 3:
+        pytest.skip(
+            "upstream source checkout not available; "
+            "run `python tools/fetch_upstream.py` to enable this check"
+        )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "29" in result.stdout or "OK" in result.stdout

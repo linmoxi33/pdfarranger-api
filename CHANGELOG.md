@@ -114,6 +114,12 @@ verbatim) in a headless API, SDK and CLI.
   - the cairo sentinel raised `TypeError` instead of `GuiUnavailable`, because
     the shim built a plain class rather than one with a guarded metaclass.
 - `tools/verify_vendor.py` prints the pinned hashes for release checks.
+- `tools/fetch_upstream.py` fetches the upstream source once so the golden suite
+  can run; without it the suite test skips with an explicit reason instead of
+  failing. Found by downloading the published tarball and running the suite on a
+  clean copy — 23 tests failed because they assumed a pip-installed package and a
+  sibling upstream checkout. The CLI tests now set `PYTHONPATH` themselves, so a
+  fresh clone is testable without an install step.
 - Release check: wheel built, installed into a bare virtualenv with neither `gi`
   nor `cairo`, then driven through a full merge/rotate/crop/blank-page job with
   the output read back and measured.

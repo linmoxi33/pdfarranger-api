@@ -72,6 +72,7 @@ INCLUDE = [
     "tests/test_equivalence.py",
     "tests/test_export.py",
     "tests/test_spec.py",
+    "tools/fetch_upstream.py",
     "tools/make_images.py",
     "tools/mutation_check.py",
     "tools/publish.py",
